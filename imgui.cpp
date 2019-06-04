@@ -6390,6 +6390,8 @@ void ImGui::FocusWindow(ImGuiWindow* window)
 
     if (g.NavWindow != window)
     {
+        ImGuiViewport* previous_viewport = g.NavWindow ? g.NavWindow->Viewport : NULL;
+
         g.NavWindow = window;
         if (window && g.NavDisableMouseHover)
             g.NavMousePosDirty = true;
@@ -6397,6 +6399,11 @@ void ImGui::FocusWindow(ImGuiWindow* window)
         g.NavId = window ? window->NavLastIds[0] : 0; // Restore NavId
         g.NavIdIsAlive = false;
         g.NavLayer = ImGuiNavLayer_Main;
+
+        // Request OS level focus
+        if (window && window->Viewport != previous_viewport && g.PlatformIO.Platform_SetWindowFocus)
+            g.PlatformIO.Platform_SetWindowFocus(window->Viewport);
+
         //IMGUI_DEBUG_LOG("FocusWindow(\"%s\")\n", window ? window->Name : NULL);
     }
 
@@ -9074,7 +9081,6 @@ static void ImGui::NavUpdateWindowing()
     // Apply final focus
     if (apply_focus_window && (g.NavWindow == NULL || apply_focus_window != g.NavWindow->RootWindowDockStop))
     {
-        ImGuiViewport* previous_viewport = g.NavWindow ? g.NavWindow->Viewport : NULL;
         ClearActiveID();
         g.NavDisableHighlight = false;
         g.NavDisableMouseHover = true;
@@ -9087,10 +9093,6 @@ static void ImGui::NavUpdateWindowing()
         // If the window only has a menu layer, select it directly
         if (apply_focus_window->DC.NavLayerActiveMask == (1 << ImGuiNavLayer_Menu))
             g.NavLayer = ImGuiNavLayer_Menu;
-
-        // Request OS level focus
-        if (apply_focus_window->Viewport != previous_viewport && g.PlatformIO.Platform_SetWindowFocus)
-            g.PlatformIO.Platform_SetWindowFocus(apply_focus_window->Viewport);
     }
     if (apply_focus_window)
         g.NavWindowingTarget = NULL;
